@@ -1,79 +1,72 @@
-# Contributing
+# Contributing to CycloScope
 
-## Contribution policy
+## Pull requests are closed to human contributions
 
-**CycloScope does not accept unsolicited contributions from people. Please do not open a pull request. Pull requests opened by anyone other than an automated bot will be closed without review.**
+**Please do not contribute code to this repository. Pull requests opened by anyone other than a bot will be closed without review.**
 
-This repository is publicly available so that people can inspect the source, follow development, and use the code under the terms of its license, if one is provided. Public visibility does not mean that the project is accepting contributions.
+CycloScope is maintained by [Sachin Shankar](https://github.com/shankar-sachin). Its source is available under the [MIT License](LICENSE), but upstream development is managed by the owner. You are welcome to inspect the implementation, report problems, discuss ideas, or maintain a fork under that license.
 
-Development decisions, implementation, and maintenance are handled by the repository owner.
+This policy applies to fixes, documentation, tests, UI changes, dependency upgrades, build configuration, and tropical cyclone data updates. Please report the problem instead of submitting a patch.
 
-## Human pull requests
+Automated maintenance pull requests from bots configured or approved by the owner may be reviewed. That exception does not extend to a person routing a contribution through a bot or coding agent. Bot submissions can also be closed.
 
-Human-authored pull requests are not accepted. This applies to all proposed changes, including:
+## Reports and questions belong in Discussions
 
-- Bug fixes and performance improvements.
-- New features, integrations, and interface changes.
-- Documentation, spelling, formatting, and accessibility changes.
-- Tests, build configuration, dependencies, and tooling.
-- Tropical cyclone records, satellite imagery integrations, and data-source changes.
+Use [GitHub Discussions](https://github.com/shankar-sachin/cycloscope/discussions) for bug reports, data discrepancies, feature suggestions, and questions. Search existing discussions before starting another one.
 
-The size or usefulness of a proposed change does not create an exception. Please do not spend time preparing a contribution with the expectation that it will be reviewed or merged.
+CycloScope combines several independent systems. Identify which part is affected:
 
-Closing a pull request is an application of this policy and does not require an individual explanation. Reopening it or submitting the same change again will not change the outcome.
+| Area | Relevant implementation | What to include |
+| --- | --- | --- |
+| Search, cyclone pages, maps, timeline, intensity charts, and CSV export | `src/app.html` | Page URL, browser, steps, selected wind unit, and expected versus actual behavior |
+| Active advisories, observed tracks, and forecast parsing | `src/server.js` | ATCF ID, advisory number or issuance time, and official NHC source |
+| Satellite archive selection and image timestamps | `src/satellite.js` | Selected track time in UTC, position, Auto/infrared/true-color selection, and displayed image timestamp |
+| Historical and preliminary records | `data/archive.gz.b64`, `data/recent.json`, and `data/recent/` | Cyclone name, year, ATCF ID, affected observation, and source supporting the correction |
+| Embedded ChatGPT interface | `src/app.html` and `POST /mcp` in `src/server.js` | Whether the standalone page works, the tool used, and the visible connection or rendering error |
+| Building or hosting | `scripts/build.mjs`, `scripts/build.sh`, and `worker/index.js` | Commit, Node version, hosting platform, command, and relevant error output |
 
-## Automated bot pull requests
+For example, “Melissa's satellite view is wrong” is difficult to investigate. A useful report identifies **Melissa 2025 (`AL132025`)**, the selected UTC observation, the imagery product, the timestamp shown under the image, and what appears incorrect.
 
-Pull requests from established automation configured or explicitly approved by the repository owner may be considered. Examples include dependency updates and automated maintenance performed by services such as Dependabot or Renovate.
+Remove tokens, cookies, account details, and other private information from screenshots and logs. For security concerns, follow [SECURITY.md](SECURITY.md).
 
-Bot pull requests are subject to the owner's review and may be closed at any time. Being submitted by a bot does not guarantee acceptance or merging.
+## Check the source and time before reporting a data error
 
-The bot exception is for authorized repository automation. It does not cover human contributions submitted through a bot account, an automated coding agent, or another intermediary to bypass this policy.
+CycloScope currently covers the Atlantic and eastern/central North Pacific. Its data has different meanings and update schedules:
 
-## Bug reports
+- **Active information:** NHC/CPHC advisories and NHC ATCF observed tracks. Observed positions and forecast positions are separate. The dashboard checks for updates every five minutes while visible; the active feed is cached for one minute.
+- **Historical tracks:** a bundled HURDAT2 snapshot through 2025.
+- **Recent tracks:** preliminary 2026 ATCF records bundled separately from finalized historical data. These records can change after post-season review. The bundled snapshot does not automatically become a continuously updated archive.
+- **Infrared imagery:** GOES-East/West ABI Band 13 from NASA GIBS. Availability depends on the retained archive; the selector permits a nearest available frame within 30 minutes.
+- **True-color imagery:** NOAA-20 VIIRS or Terra MODIS daily composites. A daily composite does not represent every individual observation hour. Coverage gaps can occur.
 
-If Issues are enabled and the repository does not provide different instructions, you may report a reproducible problem there. A bug report is a report of an observed failure; it is not an invitation to submit a pull request.
+An unavailable upstream feed, an older date outside retained infrared coverage, and a daily composite displaying a date rather than an exact hour are different from a parsing or playback defect. Include the source response or official reference when it helps distinguish them. If CycloScope hides a failure or labels historical information as current, report that behavior.
 
-Before opening an issue:
+Please do not submit invented track positions, inferred central pressures, manually altered source records, or current satellite images as replacements for missing historical imagery.
 
-1. Search existing issues for the same problem.
-2. Check whether the behavior is caused by unavailable upstream data, a temporary service outage, or a documented limitation.
-3. Include enough information for the owner to understand and reproduce the problem.
+## Reproducing a problem locally
 
-A useful report includes:
+The project uses JavaScript ES modules, a self-contained Worker, the MCP Apps SDK, esbuild, and locally embedded Geist fonts. Use **Node.js 24 or later**.
 
-- A concise description of the problem.
-- The steps that reproduce it.
-- The expected result and the actual result.
-- Your browser and operating system, where relevant.
-- The tropical cyclone's name, year, and identifier, where relevant.
-- The affected page, selected timestamp, and imagery product for satellite-related problems.
-- Relevant screenshots or error messages with private information removed.
+From the repository root:
 
-Do not include passwords, API keys, authentication tokens, or other sensitive information. Reports may be closed if they are duplicates, lack sufficient detail, or concern behavior outside the project's supported scope.
+```sh
+npm ci
+npm run build
+npm test
+npm run validate
+npm run dev
+```
 
-## Feature requests and questions
+The build runs before the tests because the tests import the generated `worker/index.js`. The development server defaults to port `4173`.
 
-If Issues or Discussions are enabled and their templates allow it, you may suggest an improvement or ask a project-related question. Search existing discussions first and keep each submission focused on one topic.
+`scripts/build.mjs` bundles the UI, fonts, coastline, satellite module, and cyclone snapshots into `worker/index.js`. `scripts/build.sh` then packages the Worker and the Sites hosting manifest into `dist/`. The generated Worker is intentionally tracked; editing it directly is not a durable source change.
 
-Suggestions do not create a commitment to implement a feature, provide support, or accept contributed code. The owner determines the project's priorities and release schedule.
+When reporting a build failure, say whether it occurred while generating the Worker or packaging it for hosting. Include the failing command and error rather than uploading `node_modules/`, credentials, or an entire machine log.
 
-## Security reports
+These commands are for investigation and independently maintained forks. They do not change the pull-request policy.
 
-Follow `SECURITY.md` if the repository provides one. Otherwise, use GitHub's private vulnerability reporting feature if it is enabled.
+## Forks, attribution, and project direction
 
-Do not publish exploit details or sensitive information in an issue or pull request. If no private reporting channel is available, avoid posting information that would expose users or systems to additional risk.
+The MIT License permits modification and redistribution subject to its terms, including retaining the required copyright and permission notice. The contribution policy does not restrict those rights. Keep third-party notices, including `data/Geist-LICENSE.txt`, with the applicable material.
 
-## Forks and licensing
-
-Any permission to copy, modify, redistribute, or use CycloScope is governed by the applicable license and third-party terms. This contribution policy does not grant additional permissions or replace those terms.
-
-If you maintain a fork where permitted, please maintain your changes there. Do not submit them upstream as a pull request. Do not present a fork as an official CycloScope release or imply endorsement by the repository owner.
-
-## Respecting the policy
-
-Keep permitted reports and discussions relevant and respectful. Do not repeatedly open rejected pull requests, use alternate accounts to resubmit changes, or route contributions through automation to avoid this policy.
-
-The owner may close submissions, lock conversations, or restrict further interaction when necessary to enforce these rules.
-
-**Please report problems through the available reporting channels, and leave code contributions to the repository owner and authorized automation.**
+Maintain your own changes in your fork and identify it clearly as a separate project or distribution. Decisions about CycloScope's supported basins, imagery products, interface, data imports, and releases remain with the owner. Discussions are welcome; implementation, review, and response times are not promised.
