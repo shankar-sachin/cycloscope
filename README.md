@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.png" alt="Banner" width="80%">
+  <img src="assets/banner.png" alt="Banner" width="80%">
   <h1>CycloScope</h1>
 </div>
 
