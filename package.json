@@ -1,0 +1,16 @@
+{
+  "name": "cycloscope",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs && bash scripts/build.sh",
+    "validate": "node scripts/validate-artifact.mjs",
+    "dev": "node --use-env-proxy --use-system-ca scripts/dev.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/ext-apps": "2.0.3",
+    "esbuild": "0.28.2",
+    "geist": "1.8.1"
+  }
+}

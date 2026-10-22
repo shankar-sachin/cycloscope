@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+import {build} from 'esbuild';
+let html=fs.readFileSync('src/app.html','utf8').replace('__LAND_DATA__',fs.readFileSync('data/land.json','utf8'));
+for(const [token,path] of [['__GEIST_SANS__','node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2'],['__GEIST_MONO__','node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2']])html=html.replace(token,fs.readFileSync(path).toString('base64'));
+const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const bundled=await build({stdin:{contents:script,resolveDir:process.cwd(),sourcefile:'cycloscope-app.js'},bundle:true,write:false,format:'iife',platform:'browser',target:'es2022',minify:true});
+html=html.replace(/<script>[\s\S]*?<\/script>/,()=>'<script>'+bundled.outputFiles[0].text.replaceAll('</script','<\\/script')+'</script>');
+const code=fs.readFileSync('src/server.js','utf8').replace('"__ARCHIVE_B64__"',()=>JSON.stringify(fs.readFileSync('data/archive.gz.b64','utf8'))).replace('"__RECENT_DATA__"',()=>fs.readFileSync('data/recent.json','utf8')).replace('"__APP_HTML__"',()=>JSON.stringify(html));
+const server=await build({stdin:{contents:code,resolveDir:process.cwd()+'/src',sourcefile:'server.js'},bundle:true,write:false,format:'esm',platform:'neutral',target:'es2022'});
+fs.writeFileSync('worker/index.js',server.outputFiles[0].text);
