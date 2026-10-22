@@ -1,4 +1,7 @@
-# CycloScope
+<div align="center">
+  <img src="assets/logo.png" alt="Banner" width="80%">
+  <h1>CycloScope</h1>
+</div>
 
 A public, Site-hosted tropical cyclone tracker and private MCP App for ChatGPT. Includes a standalone dashboard, four read-only tools, and an interactive view delivered through `resources/read`.
 
